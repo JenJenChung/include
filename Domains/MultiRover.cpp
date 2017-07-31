@@ -1,6 +1,6 @@
 #include "MultiRover.h"
 
-MultiRover::MultiRover(vector<double> wLims, size_t numSteps, size_t numPop, size_t numPOIs, string evalFunc, size_t rovs): world(wLims), nSteps(numSteps), nPop(numPop), nPOIs(numPOIs), evaluationFunction(evalFunc), nRovers(rovs){
+MultiRover::MultiRover(vector<double> wLims, size_t numSteps, size_t numPop, size_t numPOIs, string evalFunc, size_t rovs, int c): world(wLims), nSteps(numSteps), nPop(numPop), nPOIs(numPOIs), evaluationFunction(evalFunc), nRovers(rovs), coupling(c){
   for (size_t i = 0; i < nRovers; i++){
     Rover * newRover = new Rover(nSteps, nPop, evaluationFunction) ;
     roverTeam.push_back(newRover) ;
@@ -55,7 +55,10 @@ void MultiRover::InitialiseEpoch(){
     xy(0) = x ; // x location
     xy(1) = y ; // y location
     double v = rand_interval(1,10) ; // value
-    POIs.push_back(Target(xy,v)) ;
+    if (coupling > 1)
+      POIs.push_back(Target(xy,v,coupling)) ;
+    else
+      POIs.push_back(Target(xy,v)) ;
   }
 }
 
@@ -90,7 +93,7 @@ void MultiRover::SimulateEpoch(bool train){
   
   double maxEval = 0.0 ;
   for (size_t i = 0; i < teamSize; i++){ // looping across the columns of 'teams'
-    // Initialise world and reset rovers and
+    // Initialise world and reset rovers and POIs
     vector<Vector2d> jointState ;
     for (size_t j = 0; j < nRovers; j++){
       roverTeam[j]->InitialiseNewLearningEpoch(POIs,initialXYs[j],initialPsis[j]) ;
@@ -116,8 +119,15 @@ void MultiRover::SimulateEpoch(bool train){
         
         // Update recorded POI observations
         for (size_t k = 0; k < POIs.size(); k++){
-          POIs[k].ObserveTarget(xy) ;
-          tempPOIs[k].ObserveTarget(xy) ;
+          if (coupling > 1){
+//            std:: cout << "Timestep: " << t << ", POI number: " << k << "\n" ;
+            POIs[k].ObserveTarget(xy,t) ;
+            tempPOIs[k].ObserveTarget(xy,t) ;
+          }
+          else{
+            POIs[k].ObserveTarget(xy) ;
+            tempPOIs[k].ObserveTarget(xy) ;
+          }
         }
       }
       // Compute stepwise G
@@ -216,8 +226,14 @@ void MultiRover::SimulateEpoch(size_t goalPOI, char * env, char * policy, Vector
         
         // Update recorded POI observations
         for (size_t k = 0; k < POIs.size(); k++){
-          POIs[k].ObserveTarget(xy) ;
-          tempPOIs[k].ObserveTarget(xy) ;
+          if (coupling > 1){
+            POIs[k].ObserveTarget(xy,t) ;
+            tempPOIs[k].ObserveTarget(xy,t) ;
+          }
+          else{
+            POIs[k].ObserveTarget(xy) ;
+            tempPOIs[k].ObserveTarget(xy) ;
+          }
         }
       }
       // Compute stepwise G
@@ -526,5 +542,122 @@ void MultiRover::ExecutePolicies(char * readFile, char * storeTraj, char * store
   for (size_t i = 0; i < loadedNN.size(); i++){
     delete loadedNN[i] ;
     loadedNN[i] = 0 ;
+  }
+}
+
+void MultiRover::ExecutePolicies(char * expFile, char * novFile, char * storeTraj, char * storePOI, char* storeEval, size_t numIn, size_t numOut, size_t numHidden){
+  // Filename to read expert NN control policies
+	std::stringstream expFileName ;
+  expFileName << expFile ;
+  std::ifstream expNNFile ;
+  
+  vector<NeuralNet *> expLoadedNN ;
+  std::cout << "Reading out " << nPop << " expert NN control policies for each rover to test...\n" ;
+  expNNFile.open(expFileName.str().c_str(),std::ios::in) ;
+  
+  // Read in all NN weight matrices
+  std::string eline ;
+  MatrixXd NNA ;
+  MatrixXd NNB ;
+  NNA.setZero(numIn,numHidden) ;
+  NNB.setZero(numHidden+1,numOut) ;
+  int nnK = NNA.rows() + NNB.rows() ; // number of lines corresponding to a single control policy
+  int k = 0 ; // track line number
+  while (std::getline(expNNFile,eline)){
+    std::stringstream lineStream(eline) ;
+    std::string cell ;
+    if (k % nnK < NNA.rows()){
+      int i = k % nnK ;
+      int j = 0 ;
+      while (std::getline(lineStream,cell,','))
+        NNA(i,j++) = atof(cell.c_str()) ;
+    }
+    else {
+      int i = (k % nnK)-NNA.rows() ;
+      int j = 0 ;
+      while (std::getline(lineStream,cell,','))
+        NNB(i,j++) = atof(cell.c_str()) ;
+    }
+    if ((k+1) % nnK == 0){
+      NeuralNet * newNN = new NeuralNet(numIn, numOut, numHidden) ;
+      newNN->SetWeights(NNA, NNB) ;
+      expLoadedNN.push_back(newNN) ;
+    }
+    k++ ;
+  }
+  expNNFile.close() ;
+  
+  // Filename to read novive NN control policies
+	std::stringstream novFileName ;
+  novFileName << novFile ;
+  std::ifstream novNNFile ;
+  
+  vector<NeuralNet *> novLoadedNN ;
+  std::cout << "Reading out " << nPop << " novice NN control policies for each rover to test...\n" ;
+  novNNFile.open(novFileName.str().c_str(),std::ios::in) ;
+  
+  // Read in all NN weight matrices
+  std::string nline ;
+  NNA.setZero(numIn,numHidden) ;
+  NNB.setZero(numHidden+1,numOut) ;
+  nnK = NNA.rows() + NNB.rows() ; // number of lines corresponding to a single control policy
+  k = 0 ; // track line number
+  while (std::getline(novNNFile,nline)){
+    std::stringstream lineStream(nline) ;
+    std::string cell ;
+    if (k % nnK < NNA.rows()){
+      int i = k % nnK ;
+      int j = 0 ;
+      while (std::getline(lineStream,cell,','))
+        NNA(i,j++) = atof(cell.c_str()) ;
+    }
+    else {
+      int i = (k % nnK)-NNA.rows() ;
+      int j = 0 ;
+      while (std::getline(lineStream,cell,','))
+        NNB(i,j++) = atof(cell.c_str()) ;
+    }
+    if ((k+1) % nnK == 0){
+      NeuralNet * newNN = new NeuralNet(numIn, numOut, numHidden) ;
+      newNN->SetWeights(NNA, NNB) ;
+      novLoadedNN.push_back(newNN) ;
+    }
+    k++ ;
+  }
+  novNNFile.close() ;
+  
+  // Assign control policies to rovers ;
+  k = 0 ;
+  for (size_t i = 0; i < nRovers; i++){
+    NeuroEvo * rovNE = roverTeam[i]->GetNEPopulation() ;
+    if (k == 0){
+      for (size_t j = 0; j < nPop; j++){
+        rovNE->GetNNIndex(j)->SetWeights(novLoadedNN[k]->GetWeightsA(),novLoadedNN[k]->GetWeightsB()) ;
+        k++ ;
+      }
+    }
+    else {
+      for (size_t j = 0; j < nPop; j++){
+        rovNE->GetNNIndex(j)->SetWeights(expLoadedNN[k]->GetWeightsA(),expLoadedNN[k]->GetWeightsB()) ;
+        k++ ;
+      }
+    }
+  }
+  
+  // Initialise test world
+  std::cout << "Initialising test world...\n" ;
+  InitialiseEpoch() ;
+  OutputPerformance(storeEval) ;
+  OutputTrajectories(storeTraj, storePOI) ;
+  ResetEpochEvals() ;
+  SimulateEpoch(false) ; // simulate in test mode
+  
+  for (size_t i = 0; i < expLoadedNN.size(); i++){
+    delete expLoadedNN[i] ;
+    expLoadedNN[i] = 0 ;
+  }
+  for (size_t i = 0; i < novLoadedNN.size(); i++){
+    delete novLoadedNN[i] ;
+    novLoadedNN[i] = 0 ;
   }
 }

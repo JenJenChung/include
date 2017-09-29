@@ -10,10 +10,12 @@ NeuralNet::NeuralNet(size_t numIn, size_t numOut, size_t numHidden, actFun afTyp
   mutationRate = 0.5 ;
   mutationStd = 1.0 ;
   
-  if (afType == TANH)
+  if (afType == TANH){
     ActivationFunction = &NeuralNet::HyperbolicTangent ;
-  else if (afType == LOGISTIC)
+  }
+  else if (afType == LOGISTIC){
     ActivationFunction = &NeuralNet::LogisticFunction ;
+  }
   else{
     std::cout << "ERROR: Unknown activation function type! Using default hyperbolic tangent function.\n" ;
     ActivationFunction = &NeuralNet::HyperbolicTangent ;
@@ -236,7 +238,7 @@ VectorXd NeuralNet::HyperbolicTangent(VectorXd input, size_t layer){
 VectorXd NeuralNet::LogisticFunction(VectorXd input, size_t layer){
   VectorXd output ;
   if (layer == 0){
-    output = weightsA*input ;
+    output = input.transpose()*weightsA ;
     for (int i = 0; i < output.size(); i++)
       output(i) = 1/(1+exp(-output(i))) ;
   }
@@ -244,7 +246,7 @@ VectorXd NeuralNet::LogisticFunction(VectorXd input, size_t layer){
     VectorXd hidden(input.size()+1) ;
     hidden.head(input.size()) = input ;
     hidden(input.size()) = bias ;
-    output = weightsB*hidden ;
+    output = hidden.transpose()*weightsB ;
     for (int i = 0; i < output.size(); i++)
       output(i) = 1/(1+exp(-output(i))) ;
   }
@@ -252,7 +254,7 @@ VectorXd NeuralNet::LogisticFunction(VectorXd input, size_t layer){
     VectorXd hidden(input.size()+1) ;
     hidden.head(input.size()) = input ;
     hidden(input.size()) = bias ;
-    output = weightsB*hidden ;
+    output = hidden.transpose()*weightsB ;
   }
   else{
     std::printf("Error: second argument must be in {0,1,2}!\n") ;

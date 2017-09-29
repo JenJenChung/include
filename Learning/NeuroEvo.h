@@ -14,7 +14,7 @@ using namespace Eigen ;
 
 class NeuroEvo{
   public:
-    NeuroEvo(size_t, size_t, size_t, size_t) ; // nIn, nOut, nHidden, popSize
+    NeuroEvo(size_t, size_t, size_t, size_t, actFun afType=TANH) ; // nIn, nOut, nHidden, popSize, activation function
     ~NeuroEvo() ;
     
     void MutatePopulation() ;
@@ -27,6 +27,7 @@ class NeuroEvo{
     size_t numIn ;
     size_t numOut ;
     size_t numHidden ;
+    actFun activationFunction ;
     
     size_t populationSize ;
     vector<NeuralNet *> populationNN ;

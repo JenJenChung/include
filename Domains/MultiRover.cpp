@@ -146,8 +146,8 @@ void MultiRover::SimulateEpoch(bool train){
         jointState.push_back(newJointState[j]) ;
       
       if (outputTrajs){
-        for (size_t i = 0; i < jointState.size(); i++)
-          trajFile << jointState[i](0) << "," << jointState[i](1) << "," ;
+        for (size_t j = 0; j < jointState.size(); j++)
+          trajFile << jointState[j](0) << "," << jointState[j](1) << "," ;
         trajFile << "\n" ;
       }
       

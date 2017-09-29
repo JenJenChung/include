@@ -23,7 +23,7 @@ using std::vector ;
 
 class NeuralNet{
   public:
-    NeuralNet(size_t numIn, size_t numOut, size_t numHidden, actFun = TANH, nnOut = BOUNDED) ; // single hidden layer
+    NeuralNet(size_t numIn, size_t numOut, size_t numHidden, actFun afType=TANH, nnOut bOut=BOUNDED) ; // single hidden layer
     ~NeuralNet(){}
     
     VectorXd EvaluateNN(VectorXd inputs) ;

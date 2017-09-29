@@ -12,6 +12,7 @@
 #include <iostream>
 
 #include "Agents/Rover.h"
+#include "Target.h"
 #include "POMDPs/POMDP.h"
 
 using std::string ;

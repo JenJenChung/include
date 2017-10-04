@@ -16,7 +16,7 @@ using namespace Eigen ;
 
 class BarAgent{
   public:
-    BarAgent(size_t nPop, string evalFunc, size_t nAct, actFun afType=LOGISTIC) ;
+    BarAgent(size_t nPop, string evalFunc, size_t nNights, actFun afType=LOGISTIC) ;
     ~BarAgent() ;
     
     void ResetEpochEvals() ;
@@ -35,7 +35,7 @@ class BarAgent{
     size_t numIn ;
     size_t numOut ;
     size_t numHidden ;
-    size_t numActions ;
+    size_t numNights ;
     
     int curAction ;
     vector<Bar> barNights ;

@@ -96,6 +96,37 @@ void MultiNightBar::SimulateEpoch(bool train){
   if (outputEvals)
     evalFile << "\n" ;
   
+  // Compute delta Pis - Only do this for training
+  // For every agent, for every neural network in the first k agents, compute delta D / delta Pi
+  if (train){
+
+    for (size_t i = 0; i < nAgents; i++){
+      
+      BarAgent* currentAgent = agentTeam[i];
+      // Pointer to currentAgent's Neural Networks
+      NeuroEvo* currentAgentNNs = currentAgent->GetNEPopulation();
+
+      for (size_t j = 0; j < nPop; j++){
+
+        // Original NN indices go from 0 to nPop-1, Mutated NN indices go from nPop to 2*NPop
+        // where 0's mutated Neural Network is at nPop, 1's at 1+nPoP etc.
+        NeuralNet* originalNN = currentAgentNNs->GetNNIndex(j);
+        NeuralNet* mutatedNN = currentAgentNNs->GetNNIndex(j+nPop);
+
+        // Determine Pi for each of the neural networks
+        VectorXd oneInput(1);
+        oneInput(0) = 1;
+        VectorXd originalOutput = originalNN->EvaluateNN(oneInput);
+        VectorXd mutatedOutput = mutatedNN->EvaluateNN(oneInput);
+
+        VectorXd diffVector = mutatedOutput - originalOutput;
+
+        double deltaPi = diffVector.norm();
+        // std::cout << "Delta Pi: " << deltaPi << std::endl;
+      }
+    }
+  }
+
   // Print best team performance
   std::cout << "max achieved value: " << maxEval << "...\n" ;
 }

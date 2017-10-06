@@ -37,7 +37,6 @@ class BarAgent{
     size_t numHidden ;
     size_t numNights ;
     
-    int curAction ;
     vector<Bar> barNights ;
     bool isD ;
     double D ;

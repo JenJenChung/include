@@ -54,7 +54,6 @@ int BarAgent::ExecuteNNControlPolicy(size_t i){
     }
   }
   // std::cout << "go on day " << k << std::endl ;   
-  curAction = k ;
   return k ;
 }
 

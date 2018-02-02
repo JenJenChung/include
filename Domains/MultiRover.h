@@ -31,6 +31,7 @@ class MultiRover{
     void SimulateEpoch(size_t goalPOI, char * pomdpEnv, char * pomdpPolicy, VectorXd prior) ;
     void EvolvePolicies(bool init = false) ;
     void ResetEpochEvals() ;
+    void SetLearningEvaluation(double) ;
     
     void OutputPerformance(char *) ;
     void OutputTrajectories(char *, char *) ;
@@ -38,6 +39,8 @@ class MultiRover{
     void OutputQueries(char *) ;
     void OutputBeliefs(char *) ;
     void OutputAverageStepwise(char *) ;
+    void OutputImpacts(char *) ;
+    void OutputLearners(char *) ;
     
     void ExecutePolicies(char * readFile, char * storeTraj, char * storePOI, char * storeEval, size_t numIn, size_t numOut, size_t numHidden) ; // read in control policies and execute in random world, store trajectory and POI results in second and third inputs, team performance stored in fourth input, fifth-seventh inputs define NN structure
     

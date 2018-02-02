@@ -6,6 +6,7 @@
 #include <random>
 #include <vector>
 #include <Eigen/Eigen>
+#include <math.h>
 #include "NeuralNet.h"
 
 using std::vector ;
@@ -23,6 +24,9 @@ class NeuroEvo{
     
     NeuralNet * GetNNIndex(size_t i){return populationNN[i] ;}
     size_t GetCurrentPopSize(){return populationNN.size() ;}
+    
+    void SetMutationNormLog(bool b=true){computeMutationNorms = b ;}
+    vector<double> GetMutationNorm(){return mutationFrobeniusNorm ;}
   private:
     size_t numIn ;
     size_t numOut ;
@@ -36,5 +40,9 @@ class NeuroEvo{
     void BinaryTournament() ;
     void RetainBestHalf() ;
     static bool CompareEvaluations(NeuralNet *, NeuralNet *) ;
+    
+    bool computeMutationNorms ;
+    vector<double> mutationFrobeniusNorm ;
+    double ComputeFrobeniusNorm(MatrixXd, MatrixXd, MatrixXd, MatrixXd) ;
 } ;
 #endif // NEUR0_EVO_H_

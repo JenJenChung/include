@@ -25,6 +25,7 @@ using std::vector ;
 using std::list ;
 using std::max ;
 using easymath::pi_2_pi ;
+using easymath::rand_interval ;
 
 class Rover{
   public:
@@ -53,6 +54,10 @@ class Rover{
     bool IsStateObsUpdated(){return stateObsUpdate ;}
     
     double GetAverageR() ;
+    
+    void SetLearningEvaluation(double, bool b = true) ;
+    void OutputImpact(char *) ;
+    bool GetIsLearn(){return isLearn ;}
   private:
     size_t nSteps ;
     size_t popSize ;
@@ -76,10 +81,21 @@ class Rover{
     VectorXd ComputeNNInput(vector<Vector2d>) ;
     Matrix2d RotationMatrix(double) ;
     
+    // Variables associated with policy expertise modeling
     size_t pomdpAction ;
     vector<double> rThreshold ;
     POMDP * expertisePOMDP ;
     VectorXd belief ;
+    
+    // Variables associated with whether or not to learn
+    bool evalLearning ;
+    bool isLearn ;
+    double tau ; // temperature
+    vector<double> deltaPi ;
+    vector<double> deltaR ;
+    vector<double> dRdPi ;
+    double sumdRdPi ;
+    vector<double> epochG ;
     
     bool stateObsUpdate ;
     size_t goalPOI ;

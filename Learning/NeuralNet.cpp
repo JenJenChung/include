@@ -33,7 +33,7 @@ NeuralNet::NeuralNet(size_t numIn, size_t numOut, size_t numHidden, actFun afTyp
   InitialiseWeights(weightsA) ;
   InitialiseWeights(weightsB) ;
   
-  eta = 0.0001 ; // learning rate
+  eta = 0.0001 ; // learning rate for backprop
 }
 
 // Evaluate NN output given input vector

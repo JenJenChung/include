@@ -18,11 +18,19 @@ NeuroEvo::~NeuroEvo(){
 
 // Double population size by adding NN with mutated weights of existing NN 
 void NeuroEvo::MutatePopulation(){
+  if (computeMutationNorms){
+    mutationFrobeniusNorm.clear() ;
+  }
+  
   for (size_t i = 0; i < populationSize; i++){
     size_t j = i + populationSize ;
     populationNN.push_back(new NeuralNet(numIn, numOut, numHidden, activationFunction)) ;
     populationNN[j]->SetWeights(populationNN[i]->GetWeightsA(),populationNN[i]->GetWeightsB()) ;
     populationNN[j]->MutateWeights() ;
+    
+    if (computeMutationNorms){
+      mutationFrobeniusNorm.push_back(ComputeFrobeniusNorm(populationNN[i]->GetWeightsA(),populationNN[i]->GetWeightsB(),populationNN[j]->GetWeightsA(),populationNN[j]->GetWeightsB())) ;
+    }
   }
 }
 
@@ -86,4 +94,16 @@ vector<double> NeuroEvo::GetAllEvaluations(){
   for (size_t i = 0 ; i < populationNN.size(); i++)
     evals.push_back(populationNN[i]->GetEvaluation()) ;
   return evals ;
+}
+
+double NeuroEvo::ComputeFrobeniusNorm(MatrixXd A, MatrixXd B, MatrixXd Am, MatrixXd Bm){
+  MatrixXd diffA = A-Am ;
+  MatrixXd diffB = B-Bm ;
+  MatrixXd diffAT = diffA.transpose() ; // congugate transpose of real matrix = transpose of matrix
+  MatrixXd diffBT = diffB.transpose() ;
+  MatrixXd diffATA = diffAT*diffA ;
+  MatrixXd diffBTB = diffBT*diffB ;
+  double traceA = diffATA.trace() ;
+  double traceB = diffBTB.trace() ;
+  return sqrt(traceA) + sqrt(traceB) ;
 }

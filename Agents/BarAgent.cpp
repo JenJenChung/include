@@ -14,6 +14,11 @@ BarAgent::BarAgent(size_t nPop, string evalFunc, size_t nAct, actFun afType): po
     std::cout << "ERROR: Unknown evaluation function type [" << evalFunc << "], setting to global evaluation!\n" ;
     isD = false ;
   }
+  
+  // Initialise actions vector to -1's
+  vector<double> actions(2*popSize,-1.0) ;
+  allActions = actions ;
+  probabilisticEvolution = false ; // probabilistic evolution requires specific signal through member function
 }
 
 BarAgent::~BarAgent(){
@@ -57,6 +62,7 @@ int BarAgent::ExecuteNNControlPolicy(size_t i){
     std::cout << "ERROR: action index not found! Performing default action 0.\n" ;
   }
   
+  allActions[i] = a ;
   curAction = k ;
   return k ;
 }
@@ -73,9 +79,36 @@ void BarAgent::SetEpochPerformance(double G, size_t i){
 }
 
 void BarAgent::EvolvePolicies(bool init){
-  if (!init)
+  if (init){
+    AgentNE->MutatePopulation() ;
+  }
+  else if (!probabilisticEvolution){
     AgentNE->EvolvePopulation(epochEvals) ;
-  AgentNE->MutatePopulation() ;
+    AgentNE->MutatePopulation() ;
+  }
+  else{
+    double pOE = ProbabilityOfEvolution() ;
+    double r = rand_interval(0.0,1.0) ; // random number in [0,1]
+    pOE = 1.0 - exp(-pOE/pEvolveScale) ; // threshold for evolution
+    if (r < pOE){
+      AgentNE->EvolvePopulation(epochEvals) ;
+      AgentNE->MutatePopulation() ;
+    } // else do not evolve
+  }
+}
+
+double BarAgent::ProbabilityOfEvolution(){
+  vector<double> diffA = ComputeChange(true) ;
+  double deltaPi = 0.0 ;
+  for (size_t i = 0; i < diffA.size(); i++)
+    deltaPi += diffA[i] ;
+  
+  vector<double> diffR = ComputeChange(false) ;
+  double deltaR = 0.0 ;
+  for (size_t i = 0; i < diffR.size(); i++)
+    deltaR += diffR[i] ;
+  
+  return (deltaR/deltaPi) ;
 }
 
 void BarAgent::OutputNNs(char * A){
@@ -119,4 +152,20 @@ void BarAgent::DifferenceEvaluationFunction(vector<int> jointAction, size_t ind,
   }
   
   D = G - G_hat ;
+}
+
+vector<double> BarAgent::ComputeChange(bool t){
+  vector<double> diff ;
+  if (t){
+    // Compare NN outputs of non-mutated parent and mutated child
+    for (size_t i = 0; i < popSize; i++){
+      diff.push_back(abs(allActions[i] - allActions[i+popSize])) ;
+    }
+  }
+  else{
+    for (size_t i = 0; i < popSize; i++){
+      diff.push_back(abs(epochEvals[i] - epochEvals[i+popSize])) ;
+    }
+  }
+  return diff ;
 }

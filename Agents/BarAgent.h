@@ -6,13 +6,18 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <float.h>
+#include <stdlib.h>
+#include <math.h>
 #include <Eigen/Eigen>
 #include "Learning/NeuroEvo.h"
 #include "Domains/Bar.h"
+#include "Utilities/Utilities.h"
 
 using std::vector ;
 using std::string ;
 using namespace Eigen ;
+using namespace easymath ;
 
 class BarAgent{
   public:
@@ -28,6 +33,14 @@ class BarAgent{
     
     void EvolvePolicies(bool init = false) ;
     
+    void UseProbabilisticEvolution(){
+      probabilisticEvolution = true ;
+      pEvolveScale = 1.0 ;
+    }
+    
+    // Probability of entering evolution and mutation step
+    double ProbabilityOfEvolution() ;
+    
     void OutputNNs(char *) ;
     NeuroEvo * GetNEPopulation(){return AgentNE ;}
   private:
@@ -37,14 +50,22 @@ class BarAgent{
     size_t numHidden ;
     size_t numActions ;
     
-    int curAction ;
     vector<Bar> barNights ;
     bool isD ;
     double D ;
     vector<double> epochEvals ;
     NeuroEvo * AgentNE ;
     
+    int curAction ;
+    vector<double> allActions ;
+    
+    bool probabilisticEvolution ;
+    double pEvolveScale ;
+    
     void DifferenceEvaluationFunction(vector<int>, size_t, double) ;
+    
+    // Compute \delta pi across mutation
+    vector<double> ComputeChange(bool) ;
 } ;
 
 #endif // BAR_AGENT_H_

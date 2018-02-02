@@ -30,6 +30,7 @@ void Rover::ResetEpochEvals(){
   // Re-initialise size of evaluations vector
   vector<double> evals(2*popSize,0) ;
   epochEvals = evals ;
+  epochG = evals ;
 }
 
 // Initial simulation parameters, includes setting initial rover position, POI positions and values, and clearing the evaluation storage vector
@@ -101,12 +102,46 @@ void Rover::SetEpochPerformance(double G, size_t i){
     epochEvals[i] = stepwiseD ;
   else
     epochEvals[i] = G ;
+  epochG[i] = G ;
 }
 
 void Rover::EvolvePolicies(bool init){
-  if (!init)
-    RoverNE->EvolvePopulation(epochEvals) ;
-  RoverNE->MutatePopulation() ;
+  // Determine whether or not to evolve
+  if (evalLearning){
+    if (init){
+      RoverNE->MutatePopulation() ;
+      isLearn = true ;
+    }
+    else{
+      deltaPi = RoverNE->GetMutationNorm() ;
+      deltaR.clear() ;
+      dRdPi.clear() ;
+      sumdRdPi = 0.0 ;
+      for (size_t i = 0; i < popSize; i++){
+//        deltaR.push_back(fabs(epochEvals[i]-epochEvals[i+popSize])) ;
+        deltaR.push_back(fabs(epochG[i]-epochG[i+popSize])) ;
+        dRdPi.push_back(deltaR[i]/deltaPi[i]) ;
+//        sumdRdPi += dRdPi[i] ;
+        if (dRdPi[i] > sumdRdPi)
+          sumdRdPi = dRdPi[i] ;
+      }
+      double p = rand_interval(0.0, 1.0) ;
+      double pLearn = 1.0 - exp(-sumdRdPi/tau) ;
+      if (p < pLearn){
+        isLearn = true ;
+        RoverNE->EvolvePopulation(epochEvals) ;
+        RoverNE->MutatePopulation() ;
+      }
+      else{
+        isLearn = false ;
+      }
+    }
+  }
+  else{
+    if (!init)
+      RoverNE->EvolvePopulation(epochEvals) ;
+    RoverNE->MutatePopulation() ;
+  }
 }
 
 void Rover::OutputNNs(char * A){
@@ -174,6 +209,40 @@ double Rover::GetAverageR(){
   
   avgSum /= windowSize ;
   return avgSum ;
+}
+
+void Rover::SetLearningEvaluation(double t, bool b){
+  evalLearning = b ;
+  if (evalLearning){
+    RoverNE->SetMutationNormLog() ; // log the Frobenius norm of mutated weight matrices
+    tau = t ;
+  }
+}
+
+void Rover::OutputImpact(char * A){
+  // Filename to write to stored in A
+  std::stringstream fileName ;
+  fileName << A ;
+  std::ofstream IFile ;
+  IFile.open(fileName.str().c_str(),std::ios::app) ;
+  
+  // Write in change in reward
+  for (size_t i = 0; i < deltaR.size(); i++){
+    IFile << deltaR[i] << "," ;
+  }
+  IFile << "\n" ;
+  // Write in change in policy
+  for (size_t i = 0; i < deltaPi.size(); i++){
+    IFile << deltaPi[i] << "," ;
+  }
+  IFile << "\n" ;
+  // Write in ratio of change
+  for (size_t i = 0; i < dRdPi.size(); i++){
+    IFile << dRdPi[i] << "," ;
+  }
+  IFile << "\n" ;
+  IFile << sumdRdPi << "," << isLearn << "\n" ;
+  IFile.close() ;
 }
 
 void Rover::UpdateNNStateInputCalculation(bool update, size_t gID){
@@ -265,7 +334,7 @@ Matrix2d Rover::RotationMatrix(double psi){
 }
 
 void Rover::DifferenceEvaluationFunction(vector<Vector2d> jointState, double G){
-  double G_hat = 0 ;
+  double G_hat = 0.0 ;
   size_t ind = 0 ; // stores agent's index in the joint state
   double minDiff = DBL_MAX ;
   for (size_t i = 0; i < jointState.size(); i++){
@@ -295,7 +364,7 @@ void Rover::DifferenceEvaluationFunction(vector<Vector2d> jointState, double G){
 }
 
 void Rover::UpdatedStateEvaluationFunction(vector<Vector2d> jointState, double G){
-  double G_hat = 0 ;
+  double G_hat = 0.0 ;
   size_t ind = 0 ; // stores agent's index in the joint state
   double minDiff = DBL_MAX ;
   for (size_t i = 0; i < jointState.size(); i++){

@@ -68,6 +68,7 @@ vector< vector<size_t> > MultiRover::RandomiseTeams(size_t n){
   for (size_t i = 0; i < n; i++)
     order.push_back(i) ;
   
+  // TODO: UNCOMMENT LINES 72, 75 TO REINTRODUCE TEAM SHUFFLING
   unsigned seed = std::chrono::system_clock::now().time_since_epoch().count() ;
 
   for (size_t j = 0; j < nRovers; j++){
@@ -109,6 +110,8 @@ void MultiRover::SimulateEpoch(bool train){
     vector<Target> tempPOIs ;
     tempPOIs = POIs ;
     
+    // Store summation of stepwise G
+    double sumG = 0.0 ;
     for (size_t t = 0; t < nSteps; t++){
       vector<Vector2d> newJointState ;
       double G = 0.0 ;
@@ -135,6 +138,7 @@ void MultiRover::SimulateEpoch(bool train){
         G += tempPOIs[k].IsObserved() ? (tempPOIs[k].GetValue()/max(tempPOIs[k].GetNearestObs(),1.0)) : 0.0 ;
         tempPOIs[k].ResetTarget() ;
       }
+      sumG += G ;
 
       // Compute stepwiseD
       for (size_t j = 0; j < nRovers; j++)
@@ -163,6 +167,9 @@ void MultiRover::SimulateEpoch(bool train){
       eval += POIs[j].IsObserved() ? (POIs[j].GetValue()/max(POIs[j].GetNearestObs(),1.0)) : 0.0 ;
       POIs[j].ResetTarget() ;
     }
+    
+    // Compute overall team performance as sum over time
+//    eval = sumG ;
     
     // Store maximum team performance
     if (eval > maxEval)
@@ -337,6 +344,11 @@ void MultiRover::ResetEpochEvals(){
     roverTeam[i]->ResetEpochEvals() ;
 }
 
+void MultiRover::SetLearningEvaluation(double tau){
+  for (size_t i = 0; i < nRovers; i++)
+    roverTeam[i]->SetLearningEvaluation(tau) ;
+}
+
 // Wrapper for writing epoch evaluations to specified files
 void MultiRover::OutputPerformance(char * A){
 	// Filename to write to stored in A
@@ -408,6 +420,30 @@ void MultiRover::OutputAverageStepwise(char * A){
   avgStepRFile.open(fileName.str().c_str(),std::ios::app) ;
   
   outputAvgStepR = true ;
+}
+
+// Wrapper for writing agent impact values to specified file
+void MultiRover::OutputImpacts(char * A){
+  int buffSize = 100 ;
+  char iFile[buffSize] ;
+  for (size_t i = 0; i < nRovers; i++){
+    sprintf(iFile,"%s%i.txt",A,i) ; // each rover agent writes to unique impact logger
+    roverTeam[i]->OutputImpact(iFile) ;
+  }
+}
+
+// Wrapper for writing IDs of learning agents to specified file
+void MultiRover::OutputLearners(char * A){
+  // Filename to write to stored in A
+  std::stringstream fileName ;
+  fileName << A ;
+  std::ofstream LFile ;
+  LFile.open(fileName.str().c_str(),std::ios::app) ;
+  
+  for (size_t i = 0; i < nRovers; i++){
+    LFile << roverTeam[i]->GetIsLearn() << "," ;
+  }
+  LFile << "\n" ;
 }
 
 void MultiRover::ExecutePolicies(char * readFile, char * storeTraj, char * storePOI, char* storeEval, size_t numIn, size_t numOut, size_t numHidden){

@@ -1,8 +1,8 @@
 #include "BarAgent.h"
 
-BarAgent::BarAgent(size_t nPop, string evalFunc, size_t nAct, actFun afType): popSize(nPop), numActions(nAct){
+BarAgent::BarAgent(size_t nPop, string evalFunc, size_t nNights, actFun afType): popSize(nPop), numNights(nNights){
   numIn = 1 ; // hard coded for 1 element input = 1 (since agent is stateless, always pass in 1)
-  numOut = 1 ; // hard coded for 1 element output k (night to visit bar)
+  numOut = numNights ; // let the network output a vector of length number of nights
   numHidden = 16 ;
   AgentNE = new NeuroEvo(numIn, numOut, numHidden, nPop, afType) ;
   
@@ -44,17 +44,18 @@ int BarAgent::ExecuteNNControlPolicy(size_t i){
   VectorXd s(1) ;
   s(0) = 1.0 ; // since problem is stateless, always pass in 1
   
-  // Calculate action, NN returns a value between 0 and 1
-  double a = AgentNE->GetNNIndex(i)->EvaluateNN(s)(0) ;
+  // Calculate action, NN returns a vector of values between 0 and 1
+  VectorXd output = AgentNE->GetNNIndex(i)->EvaluateNN(s);
   
-  // Compute discrete action
+  // Compute discrete action by finding maximum index of output vector
   int k = 0 ;
-  bool indexFound = false ;
-  for (size_t j = 0; j < numActions; j++){
-    if (a <= (double)(j+1)/(double)numActions){
+  double currMaxOutput = output(0) ;
+
+  // TODO: Implement random tie breaking
+  for (size_t j = 0; j < numNights; j++){
+    if (output(j) > currMaxOutput){
       k = (int)j ;
-      indexFound = true ;
-      break ;
+      currMaxOutput = output(j) ;
     }
   }
   
@@ -64,6 +65,7 @@ int BarAgent::ExecuteNNControlPolicy(size_t i){
   
   allActions[i] = a ;
   curAction = k ;
+  // std::cout << "go on day " << k << std::endl ;
   return k ;
 }
 

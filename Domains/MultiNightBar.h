@@ -35,6 +35,7 @@ class MultiNightBar{
     void OutputControlPolicies(char *) ;
     
     void ExecutePolicies(char * readFile, char * storeJoint, char * storeNights, char * storeEval, size_t numIn, size_t numOut, size_t numHidden) ; // read in control policies and execute in random world, store joint action and bar parameters in second and third inputs, team performance stored in fourth input, fifth-seventh inputs define NN structure
+
   private:
     size_t nNights ;
     size_t capacity ;

@@ -4,6 +4,7 @@ C++ libraries
 Repository includes all header and source files for setting up project code.
 Dependencies:
   - eigen3
+  - yaml-cpp (https://github.com/jbeder/yaml-cpp)
 
 To use, include the following lines in the CMakeLists.txt in your project folder:
 

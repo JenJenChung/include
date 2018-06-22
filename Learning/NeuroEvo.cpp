@@ -6,6 +6,7 @@ NeuroEvo::NeuroEvo(size_t nIn, size_t nOut, size_t nHidden, size_t pSize, actFun
   for (size_t i = 0; i < populationSize; i++)
     populationNN.push_back(new NeuralNet(numIn, numOut, numHidden, afType)) ;
   SurvivalFunction = &NeuroEvo::BinaryTournament ; // how to decide which NNs to retain after each round of evolution
+  computeMutationNorms = false ;
 }
 
 // Destructor: Deletes all NN objects from population

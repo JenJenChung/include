@@ -14,4 +14,4 @@ set(CMAKE_CXX_FLAGS "-std=c++11 -g -Wall -I /usr/local/include/eigen3/")
 
 add_subdirectory(include)
 
-set( LIBS_TO_LINK Utilities Learning Domains Agents POMDPs)
+set( LIBS_TO_LINK Utilities Learning Domains Agents POMDPs Planning yaml-cpp)

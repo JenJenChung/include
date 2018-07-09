@@ -50,10 +50,12 @@ int BarAgent::ExecuteNNControlPolicy(size_t i){
   // Compute discrete action by finding maximum index of output vector
   int k = 0 ;
   double currMaxOutput = output(0) ;
+  bool indexFound = false ;
 
   // TODO: Implement random tie breaking
   for (size_t j = 0; j < numNights; j++){
     if (output(j) > currMaxOutput){
+      indexFound = true ;
       k = (int)j ;
       currMaxOutput = output(j) ;
     }
@@ -63,7 +65,7 @@ int BarAgent::ExecuteNNControlPolicy(size_t i){
     std::cout << "ERROR: action index not found! Performing default action 0.\n" ;
   }
   
-  allActions[i] = a ;
+  allActions[i] = currMaxOutput ;
   curAction = k ;
   // std::cout << "go on day " << k << std::endl ;
   return k ;

@@ -8,6 +8,7 @@
 #include <list>
 #include <chrono>
 #include <random>
+#include <algorithm>
 #include <float.h>
 #include <Eigen/Eigen>
 #include <yaml-cpp/yaml.h>
@@ -33,8 +34,9 @@ class Warehouse{
     
     void OutputPerformance(string) ;
     void OutputControlPolicies(string) ;
-//    void OutputTrajectories(char *, char *) ;
-//    
+    void OutputEpisodeReplay(string, string, string, string) ;
+    void DisableEpisodeReplayOutput(){outputEpReplay = false ;}
+
     void ExecutePolicies(YAML::Node) ;
     
   private:
@@ -44,6 +46,7 @@ class Warehouse{
     size_t nAGVs ;
     vector<double> baseCosts ;
     vector<size_t> capacities ;
+    bool neLearn ;
     
     struct iAgent{
       size_t vID ;          // graph vertex ID associated with agent
@@ -71,12 +74,13 @@ class Warehouse{
     size_t GetAgentID(int) ;
     
     bool outputEvals ;
-    bool outputNNs ;
-    bool outputTrajs ;
+    bool outputEpReplay ;
     
     std::ofstream evalFile ;
-    std::ofstream NNFile ;
-    std::ofstream trajFile ;
+    std::ofstream agvStateFile ;
+    std::ofstream agvEdgeFile ;
+    std::ofstream agentStateFile ;
+    std::ofstream agentActionFile ;
     
 };
 

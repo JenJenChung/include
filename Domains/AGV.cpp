@@ -14,6 +14,7 @@ AGV::AGV(int initV, vector<int> goalVs, Graph * graph){
   isReplan = true ;
   agvPlanner = new Search(graph, origin, goal) ;
   SetNewGoal() ;
+  ncDel++ ;
 }
 
 AGV::~AGV(){
@@ -31,7 +32,9 @@ void AGV::ResetAGV(){
   tWait = 0 ;
   agvPlanner->SetSource(origin) ;
   SetNewGoal() ;
+  ncDel++ ;
   agvPlanner->ResetSearch() ;
+  curEdge = 0 ;
   isReplan = true ;
 }
 
@@ -48,6 +51,7 @@ void AGV::Traverse(){
         nextVertex = -1 ; // agv must re-enter graph
         ncDel++ ; // increment number of commanded deliveries
         agvPlanner->ResetSearch() ;
+        curEdge = 0 ; // remove it from its final edge
         isReplan = true ;
       }
     }

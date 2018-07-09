@@ -1,7 +1,7 @@
 #include "Intersection.h"
 
 Intersection::Intersection(size_t nPop, size_t nIn, size_t nOut, size_t nHidden): popSize(nPop), numIn(nIn), numOut(nOut), numHidden(nHidden){
-  IntersectionNE = new NeuroEvo(numIn, numOut, numHidden, popSize) ;
+  IntersectionNE = new NeuroEvo(numIn, numOut, numHidden, popSize, LOGISTIC) ;
 }
 
 Intersection::~Intersection(){
@@ -37,8 +37,8 @@ void Intersection::OutputNNs(string A){
   std::ofstream NNFile ;
   NNFile.open(A.c_str(),std::ios::app) ;
   
-  // Only write in non-mutated (competitive) policies
-  for (size_t i = 0; i < popSize; i++){
+  // Write in all policies
+  for (size_t i = 0; i < popSize*2; i++){
     NeuralNet * NN = IntersectionNE->GetNNIndex(i) ;
     MatrixXd NNA = NN->GetWeightsA() ;
     for (int j = 0; j < NNA.rows(); j++){

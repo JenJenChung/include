@@ -157,11 +157,4 @@ double rand(double low, double high) {
     double r = static_cast<double>(std::rand()) / static_cast<double>(RAND_MAX);
     return r*(high - low) + low;
 }
-
-double pi_2_pi(double x){
-  x = fmod(x+PI,2.0*PI) ;
-  if (x < 0.0)
-    x += 2.0*PI ;
-  return x - PI ;
-}
 } // namespace easymath

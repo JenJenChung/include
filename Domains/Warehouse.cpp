@@ -8,6 +8,7 @@ Warehouse::Warehouse(YAML::Node configs){
   string cFile = domainDir + configs["graph"]["capacities"].as<string>() ;
   nPop = configs["neuroevo"]["population_size"].as<size_t>() ;
   nSteps = configs["simulation"]["steps"].as<size_t>() ;
+  neLearn = configs["neuroevo"]["learn"].as<bool>() ;
   
   InitialiseGraph(vFile, eFile, cFile, configs) ;
   outputEvals = false ;
@@ -29,6 +30,12 @@ Warehouse::~Warehouse(){
   if (outputEvals){
     evalFile.close() ;
   }
+  if (outputEpReplay){
+    agvStateFile.close() ;
+    agvEdgeFile.close() ;
+    agentStateFile.close() ;
+    agentActionFile.close() ;
+  }
 }
 
 void Warehouse::SimulateEpoch(bool train){
@@ -47,6 +54,28 @@ void Warehouse::SimulateEpoch(bool train){
   
   for (size_t i = 0; i < teamSize; i++){ // looping across the columns of 'teams'
     InitialiseNewEpoch() ;
+  
+    if (outputEpReplay){
+      for (size_t k = 0; k < nAGVs; k++){
+        if (whAGVs[k]->GetNextVertex() < 0){
+          agvStateFile << "1," ;
+          agvEdgeFile << "-1," ;
+        }
+        else{
+          agvStateFile << "0," ;
+          agvEdgeFile << whGraph->GetEdgeID(whAGVs[k]->GetCurEdge()) << "," ;
+        }
+      }
+      agvStateFile << "\n" ;
+      agvEdgeFile << "\n" ;
+      
+      for(size_t n = 0; n < whGraph->GetNumEdges(); n++){
+        agentStateFile << "0," ;
+        agentActionFile << baseCosts[n] << "," ;
+      }
+      agentStateFile << "\n" ;
+      agentActionFile << "\n" ;
+    }
     
     vector<size_t> memberIDs ;
     for (size_t j = 0; j < nAgents; j++){ // extract agent member IDs for this team
@@ -129,6 +158,29 @@ void Warehouse::SimulateEpoch(bool train){
       for (size_t k = 0; k < nAGVs; k++){
         whAGVs[k]->Traverse() ;
       }
+  
+      if (outputEpReplay){
+        for (size_t k = 0; k < nAGVs; k++){
+          if (whAGVs[k]->GetNextVertex() < 0){
+            agvStateFile << "1," ;
+            agvEdgeFile << "-1," ;
+          }
+          else{
+            agvStateFile << "0," ;
+            agvEdgeFile << whGraph->GetEdgeID(whAGVs[k]->GetCurEdge()) << "," ;
+          }
+        }
+        agvStateFile << "\n" ;
+        agvEdgeFile << "\n" ;
+        
+        for(size_t k = 0; k < s.size(); k++){
+          agentStateFile << s[k] << "," ;
+          agentActionFile << a[k] << "," ;
+        }
+        agentStateFile << "\n" ;
+        agentActionFile << "\n" ;
+      }
+      
     } // end simulation timesteps
     
     // Log data
@@ -207,6 +259,34 @@ void Warehouse::OutputControlPolicies(string nn_str){
   for (size_t i = 0; i < nAgents; i++){
     maTeam[i]->OutputNNs(nn_str) ;
   }
+}
+
+void Warehouse::OutputEpisodeReplay(string agv_s_str, string agv_e_str, string a_s_str, string a_a_str){
+  if (agvStateFile.is_open())
+    agvStateFile.close() ;
+  agvStateFile.open(agv_s_str.c_str(),std::ios::app) ;
+  
+  if (agvEdgeFile.is_open())
+    agvEdgeFile.close() ;
+  agvEdgeFile.open(agv_e_str.c_str(),std::ios::app) ;
+  
+  if (agentStateFile.is_open())
+    agentStateFile.close() ;
+  agentStateFile.open(a_s_str.c_str(),std::ios::app) ;
+  
+  if (agentActionFile.is_open())
+    agentActionFile.close() ;
+  agentActionFile.open(a_a_str.c_str(),std::ios::app) ;
+  
+  outputEpReplay = true ;
+  
+  std::cout << "Writing AGV logs to files: " << "\n" ;
+  std::cout << "\t" << agv_s_str << "\n" ;
+  std::cout << "\t" << agv_e_str << "\n" ;
+  
+  std::cout << "Writing agent logs to files: " << "\n" ;
+  std::cout << "\t" << a_s_str << "\n" ;
+  std::cout << "\t" << a_a_str << "\n" ;
 }
 
 void Warehouse::ExecutePolicies(YAML::Node configs){
@@ -291,7 +371,7 @@ void Warehouse::InitialiseGraph(string v_str, string e_str, string c_str, YAML::
   {
     vertices.push_back(atoi(line.c_str())) ;
   }
-  cout << "complete.\n" ;
+  cout << "complete. " << vertices.size() << " vertices in graph.\n" ;
   
   cout << "Reading edges from file: " ;
   ifstream edgesFile(e_str.c_str()) ;
@@ -315,7 +395,7 @@ void Warehouse::InitialiseGraph(string v_str, string e_str, string c_str, YAML::
     costs.push_back(ec[2]) ;
     edges.push_back(e) ;
   }
-  cout << "complete.\n" ;
+  cout << "complete. " << edges.size() << " edges in graph.\n" ;
   
   baseCosts = costs ;
   
@@ -386,7 +466,7 @@ void Warehouse::InitialiseAGVs(YAML::Node configs){
     agvOrigins.push_back((size_t)atoi(line.c_str())) ;
     nAGVs++ ;
   }
-  cout << "complete.\n" ;
+  cout << "complete. Created " << nAGVs << " AGVs.\n" ;
   
 //  std::cout << "Number of AGVs: " << nAGVs << "\n" ;
   
@@ -406,7 +486,7 @@ void Warehouse::InitialiseAGVs(YAML::Node configs){
   {
     agvGoals.push_back(atoi(line.c_str())) ;
   }
-  cout << "complete.\n" ;
+  cout << "complete. " << agvGoals.size() << " goal vertices.\n" ;
   
 //  std::cout << "Number of possible goals: " << agvGoals.size() << "\n" ;
   
@@ -456,8 +536,15 @@ void Warehouse::QueryMATeam(vector<size_t> memberIDs, vector<double> &a, vector<
     }
     VectorXd output = maTeam[i]->ExecuteNNControlPolicy(memberIDs[i], input) ;
     
-    for (size_t j = 0; j < (size_t)output.size(); j++){
-      a[whAgents[i]->eIDs[j]] += output(j) ;
+    double maxBaseCost ;
+    if (neLearn){
+      maxBaseCost = * std::max_element(baseCosts.begin(), baseCosts.end()) ;
+    }
+    else{
+      maxBaseCost = 0.0 ;
+    }
+    for (size_t j = 0; j < (size_t)output.size(); j++){ // output [0,1] scaled to max base cost
+      a[whAgents[i]->eIDs[j]] += output(j)*maxBaseCost ;
     }
   }
 }

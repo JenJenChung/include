@@ -38,8 +38,5 @@ matrix1d unit_vector(matrix1d) ;
 
 // Returns a random number between two values
 double rand(double low, double high) ;
-
-// Normalise angles between +/-PI
-double pi_2_pi(double) ;
 } // namespace easymath
 #endif // UTIL_FUNCTIONS_H_

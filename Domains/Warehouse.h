@@ -12,7 +12,9 @@
 #include <float.h>
 #include <Eigen/Eigen>
 #include <yaml-cpp/yaml.h>
+#include "Agents/Agent.h"
 #include "Agents/Intersection.h"
+#include "Agents/Link.h"
 #include "Planning/Graph.h"
 #include "Planning/Edge.h"
 #include "AGV.h"
@@ -23,12 +25,19 @@ using std::string ;
 using std::ifstream ;
 using std::stringstream ;
 
+enum AgentType {INTERSECTION, LINK, OTHERAGENT} ;
+
 class Warehouse{
   public:
     Warehouse(YAML::Node) ;
-    ~Warehouse() ;
+    virtual ~Warehouse(void) ;
     
-    void SimulateEpoch(bool train = true) ;
+    virtual void SimulateEpoch(bool train = true){
+      std::cout << "This function simulates a single learning epoch.\n" ;
+    }
+    virtual void InitialiseMATeam(){ // create agents for each vertex in graph
+      std::cout << "This function initialises the multiagent team.\n" ;
+    }
     void EvolvePolicies(bool init = false) ;
     void ResetEpochEvals() ;
     
@@ -39,7 +48,7 @@ class Warehouse{
 
     void ExecutePolicies(YAML::Node) ;
     
-  private:
+  protected:
     size_t nSteps ;
     size_t nPop ;
     size_t nAgents ;
@@ -47,31 +56,34 @@ class Warehouse{
     vector<double> baseCosts ;
     vector<size_t> capacities ;
     bool neLearn ;
+    AgentType isAgent ;
     
     struct iAgent{
-      size_t vID ;          // graph vertex ID associated with agent
-      vector<size_t> eIDs ; // graph edge IDs associated with incoming edges to agent vertex
+      size_t vID ;          // graph vertex ID associated with agent (edge ID if link agent)
+      vector<size_t> eIDs ; // graph edge IDs associated with incoming edges to agent vertex (vertex IDs if link agent)
       list<size_t> agvIDs ; // agv IDs waiting to cross intersection
     } ;
     
-    vector<Intersection *> maTeam ; // manage agent NE routines
+    vector<Agent *> maTeam ; // manage agent NE routines
     vector<iAgent *> whAgents ; // manage agent vertex and edge lookups from graph
     Graph * whGraph ; // vertex and edge definitions, access to change edge costs at each step
     vector<AGV *> whAGVs ; // manage AGV A* search and movement through graph
     
     void InitialiseGraph(string, string, string, YAML::Node) ; // read in configuration files and construct Graph
-    void InitialiseMATeam() ; // create agents for each vertex in graph
     void InitialiseAGVs(YAML::Node) ; // create AGVs to move in graph
     void InitialiseNewEpoch() ; // reset simulation for each episode/epoch
     
     vector< vector<size_t> > RandomiseTeams(size_t) ; // shuffle agent populations
     
-    void QueryMATeam(vector<size_t>, vector<double>&, vector<size_t>&) ; // get current graph costs
-    void GetJointState(vector<Edge *> e, vector<size_t> &eNum, vector<double> &eTime) ;
-    
+    virtual void QueryMATeam(vector<size_t> memberIDs, vector<double> &a, vector<size_t> &s){
+      std::cout << "This function queries the multiagent team for its graph costs.\n" ;
+    }
+
     void UpdateGraphCosts(vector<double>) ;
     
-    size_t GetAgentID(int) ;
+//    virutal void GetJointState(vector<Edge *> e, vector<size_t> &eNum, vector<double> &eTime) ;
+//    virtual void GetJointState(vector<Edge *> e, vector<size_t> &s) ;
+//    virtual size_t GetAgentID(int) ;
     
     bool outputEvals ;
     bool outputEpReplay ;

@@ -1,5 +1,5 @@
-#ifndef WAREHOUSE_INTERSECTIONS_H_
-#define WAREHOUSE_INTERSECTIONS_H_
+#ifndef WAREHOUSE_INTERSECTIONS_TIME_H_
+#define WAREHOUSE_INTERSECTIONS_TIME_H_
 
 #include <vector>
 #include <list>
@@ -10,10 +10,10 @@
 using std::vector ;
 using std::list ;
 
-class WarehouseIntersections : public Warehouse {
+class WarehouseIntersectionsTime : public Warehouse {
   public:
-    WarehouseIntersections(YAML::Node configs) : Warehouse(configs){}
-    ~WarehouseIntersections(void) ;
+    WarehouseIntersectionsTime(YAML::Node configs) : Warehouse(configs){}
+    ~WarehouseIntersectionsTime(void) ;
     
     void SimulateEpoch(bool train = true) ;
     void SimulateEpoch(vector<size_t> team) ;
@@ -22,9 +22,9 @@ class WarehouseIntersections : public Warehouse {
     
   private:
     void QueryMATeam(vector<size_t>, vector<double>&, vector<size_t>&) ; // get current graph costs
-    void GetJointState(vector<Edge *> e, vector<size_t> &eNum) ;
+    void GetJointState(vector<Edge *> e, vector<size_t> &eNum, vector<double> &eTime) ;
     size_t GetAgentID(int) ;
     
 };
 
-#endif // WAREHOUSE_INTERSECTIONS_H_
+#endif // WAREHOUSE_INTERSECTIONS_TIME_H_

@@ -1,6 +1,6 @@
-#include "WarehouseIntersections.h"
+#include "WarehouseLinksTime.h"
 
-WarehouseIntersections::~WarehouseIntersections(void){
+WarehouseLinksTime::~WarehouseLinksTime(){
   delete whGraph ;
   whGraph = 0 ;
   for (size_t i = 0; i < whAGVs.size(); i++){
@@ -24,7 +24,7 @@ WarehouseIntersections::~WarehouseIntersections(void){
   }
 }
 
-void WarehouseIntersections::SimulateEpoch(bool train){
+void WarehouseLinksTime::SimulateEpoch(bool train){
   size_t teamSize ;
   if (train)
     teamSize = 2*nPop ;
@@ -76,6 +76,7 @@ void WarehouseIntersections::SimulateEpoch(bool train){
       UpdateGraphCosts(a) ;
       
       // Replan AGVs as necessary
+      vector<size_t> toEnter ; // keep track of AGVs waiting to enter (these need to be removed from waitlists regardless of whether or not they enter the graph since replanning can cause a change in agent membership)
       for (size_t k = 0; k < nAGVs; k++){
         whAGVs[k]->CompareCosts(a) ; // set replanning flags
       
@@ -87,10 +88,11 @@ void WarehouseIntersections::SimulateEpoch(bool train){
         if (whAGVs[k]->GetT2V() == 0){
           size_t agentID ;
           if (whAGVs[k]->GetNextVertex() < 0){ // AGV waiting to enter graph
-            agentID = GetAgentID(whAGVs[k]->GetNextEdge()->GetVertex1()) ;
+            agentID = whGraph->GetEdgeID(whAGVs[k]->GetNextEdge()) ;
+            toEnter.push_back(k) ;
           }
           else{ // AGV enroute
-            agentID = GetAgentID(whAGVs[k]->GetNextVertex()) ;
+            agentID = whGraph->GetEdgeID(whAGVs[k]->GetCurEdge()) ;
           }
           bool onWaitList = false ;
           for (list<size_t>::iterator it = whAgents[agentID]->agvIDs.begin(); it!=whAgents[agentID]->agvIDs.end(); ++it){
@@ -107,7 +109,7 @@ void WarehouseIntersections::SimulateEpoch(bool train){
       
       // Attempt to move any transitioning AGVs on to new edges (according to wait list order)
       for (size_t k = 0; k < nAgents; k++){
-        vector<size_t> toRemove ;
+        vector<size_t> toRemove = toEnter ;
         for (list<size_t>::iterator it = whAgents[k]->agvIDs.begin(); it!=whAgents[k]->agvIDs.end(); ++it){
           size_t curAGV = *it ;
           size_t nextID = whGraph->GetEdgeID(whAGVs[curAGV]->GetNextEdge()) ; // next edge ID
@@ -117,8 +119,10 @@ void WarehouseIntersections::SimulateEpoch(bool train){
             std::cout << "AGV #" << curAGV << ", nextID: " << nextID << "\n" ;
             std::cout << "  t2v: " << whAGVs[curAGV]->GetT2V() << "\n" ;
             std::cout << "  itsQueue: " << (whAGVs[curAGV]->GetAGVPlanner()->GetQueue() != 0) << "\n" ;
+            std::cout << "  itsNextEdge: (" << whAGVs[curAGV]->GetNextEdge() << ")\n" ;
+            edgeFull = true ;
           }
-          if (s[nextID] >= capacities[nextID]){ // check if next edge is full
+          else if (s[nextID] >= capacities[nextID]){ // check if next edge is full
             edgeFull = true ;
           }
           if (!edgeFull){ // transfer to new edge and update agv counters
@@ -221,7 +225,7 @@ void WarehouseIntersections::SimulateEpoch(bool train){
   }
 }
 
-void WarehouseIntersections::SimulateEpoch(vector<size_t> memberIDs){
+void WarehouseLinksTime::SimulateEpoch(vector<size_t> memberIDs){
   double maxEval = 0.0 ;
   vector<size_t> travelStats ;
   
@@ -257,6 +261,7 @@ void WarehouseIntersections::SimulateEpoch(vector<size_t> memberIDs){
     UpdateGraphCosts(a) ;
     
     // Replan AGVs as necessary
+    vector<size_t> toEnter ; // keep track of AGVs waiting to enter (these need to be removed from waitlists regardless of whether or not they enter the graph since replanning can cause a change in agent membership)
     for (size_t k = 0; k < nAGVs; k++){
       whAGVs[k]->CompareCosts(a) ; // set replanning flags
     
@@ -268,10 +273,11 @@ void WarehouseIntersections::SimulateEpoch(vector<size_t> memberIDs){
       if (whAGVs[k]->GetT2V() == 0){
         size_t agentID ;
         if (whAGVs[k]->GetNextVertex() < 0){ // AGV waiting to enter graph
-          agentID = GetAgentID(whAGVs[k]->GetNextEdge()->GetVertex1()) ;
+          agentID = whGraph->GetEdgeID(whAGVs[k]->GetNextEdge()) ;
+          toEnter.push_back(k) ;
         }
         else{ // AGV enroute
-          agentID = GetAgentID(whAGVs[k]->GetNextVertex()) ;
+          agentID = whGraph->GetEdgeID(whAGVs[k]->GetCurEdge()) ;
         }
         bool onWaitList = false ;
         for (list<size_t>::iterator it = whAgents[agentID]->agvIDs.begin(); it!=whAgents[agentID]->agvIDs.end(); ++it){
@@ -288,7 +294,7 @@ void WarehouseIntersections::SimulateEpoch(vector<size_t> memberIDs){
     
     // Attempt to move any transitioning AGVs on to new edges (according to wait list order)
     for (size_t k = 0; k < nAgents; k++){
-      vector<size_t> toRemove ;
+      vector<size_t> toRemove = toEnter ;
       for (list<size_t>::iterator it = whAgents[k]->agvIDs.begin(); it!=whAgents[k]->agvIDs.end(); ++it){
         size_t curAGV = *it ;
         size_t nextID = whGraph->GetEdgeID(whAGVs[curAGV]->GetNextEdge()) ; // next edge ID
@@ -298,8 +304,10 @@ void WarehouseIntersections::SimulateEpoch(vector<size_t> memberIDs){
           std::cout << "AGV #" << curAGV << ", nextID: " << nextID << "\n" ;
           std::cout << "  t2v: " << whAGVs[curAGV]->GetT2V() << "\n" ;
           std::cout << "  itsQueue: " << (whAGVs[curAGV]->GetAGVPlanner()->GetQueue() != 0) << "\n" ;
+          std::cout << "  itsNextEdge: (" << whAGVs[curAGV]->GetNextEdge() << ")\n" ;
+          edgeFull = true ;
         }
-        if (s[nextID] >= capacities[nextID]){ // check if next edge is full
+        else if (s[nextID] >= capacities[nextID]){ // check if next edge is full
           edgeFull = true ;
         }
         if (!edgeFull){ // transfer to new edge and update agv counters
@@ -389,39 +397,35 @@ void WarehouseIntersections::SimulateEpoch(vector<size_t> memberIDs){
   }
 }
 
-void WarehouseIntersections::InitialiseMATeam(){
-  // Initialise NE components and domain housekeeping components of the intersection agents
+void WarehouseLinksTime::InitialiseMATeam(){
+  // Initialise NE components and domain housekeeping components of the link agents
   vector<int> v = whGraph->GetVertices() ;
   vector<Edge *> e = whGraph->GetEdges() ;
-  for (size_t i = 0; i < v.size(); i++){
-    vector<size_t> eIDs ;
-    for (size_t j = 0; j < e.size(); j++){
-      if (e[j]->GetVertex2() == (int)i){
-        eIDs.push_back(j) ;
-      }
-    }
-    iAgent * agent = new iAgent{i, eIDs} ;
-    size_t nOut = eIDs.size() ; // NN output is additional cost applied to each edge
-    size_t nIn = nOut ; // NN input is current #AGVs on all incoming edges
-    size_t nHid = nIn*2 ; // set number of hidden nodes to twice the number of input neurons
+  for (size_t i = 0; i < e.size(); i++){
+    vector<size_t> vIDs ;
+    vIDs.push_back(e[i]->GetVertex1()) ;
+    vIDs.push_back(e[i]->GetVertex2()) ;
+    iAgent * agent = new iAgent{i, vIDs} ;
+    size_t nOut = 1 ;
+    size_t nIn = 2 ;
+    size_t nHid = 16 ;
     Agent * neAgent ;
-    neAgent = new Intersection(nPop, nIn, nOut, nHid) ;
-    
+    neAgent = new Link(nPop, nIn, nOut, nHid) ;
     whAgents.push_back(agent) ;
     maTeam.push_back(neAgent) ;
   }
   nAgents = whAgents.size() ;
 }
 
-void WarehouseIntersections::QueryMATeam(vector<size_t> memberIDs, vector<double> &a, vector<size_t> &s){
+void WarehouseLinksTime::QueryMATeam(vector<size_t> memberIDs, vector<double> &a, vector<size_t> &s){
   vector<Edge *> e = whGraph->GetEdges() ;
-  GetJointState(e, s) ;
+  vector<double> eTime = baseCosts ;
+  GetJointState(e, s, eTime) ;
   
   for (size_t i = 0; i < nAgents; i++){
-    VectorXd input(whAgents[i]->eIDs.size()) ;
-    for (size_t j = 0; j < whAgents[i]->eIDs.size(); j++){
-      input(j) = s[whAgents[i]->eIDs[j]] ;
-    }
+    VectorXd input(2) ;
+    input(0) = s[whAgents[i]->vID] ;
+    input(1) = eTime[whAgents[i]->vID] ;
     VectorXd output = maTeam[i]->ExecuteNNControlPolicy(memberIDs[i], input) ;
     
     double maxBaseCost ;
@@ -431,35 +435,19 @@ void WarehouseIntersections::QueryMATeam(vector<size_t> memberIDs, vector<double
     else{
       maxBaseCost = 0.0 ;
     }
-    for (size_t j = 0; j < (size_t)output.size(); j++){ // output [0,1] scaled to max base cost
-      a[whAgents[i]->eIDs[j]] += output(j)*maxBaseCost ;
-    }
+    a[whAgents[i]->vID] += output(0)*maxBaseCost ;
   }
 }
 
-void WarehouseIntersections::GetJointState(vector<Edge *> e, vector<size_t> &s){
+void WarehouseLinksTime::GetJointState(vector<Edge *> e, vector<size_t> &s, vector<double> &eTime){
   for (size_t i = 0; i < nAGVs; i++){
     Edge * curEdge = whAGVs[i]->GetCurEdge() ;
     size_t j = whGraph->GetEdgeID(curEdge) ;
     if (j < s.size()){
       s[j]++ ;
+      if (eTime[j] > whAGVs[i]->GetT2V()){ // update next time of arrival
+        eTime[j] = whAGVs[i]->GetT2V() ;
+      }
     }
   }
-}
-
-size_t WarehouseIntersections::GetAgentID(int v){
-  size_t vID ;
-  for (size_t i = 0; i < whGraph->GetNumVertices(); i++){
-    if (whGraph->GetVertices()[i] == v){
-      vID = i ;
-      break ;
-    }
-  }
-  for (size_t i = 0; i < whAgents.size(); i++){
-    if (vID == whAgents[i]->vID){
-      return i ;
-    }
-  }
-  std::cout << "Error: managing agent not found in graph!\n" ;
-  return whAgents.size() ;
 }

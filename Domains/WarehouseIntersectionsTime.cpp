@@ -1,6 +1,6 @@
-#include "WarehouseIntersections.h"
+#include "WarehouseIntersectionsTime.h"
 
-WarehouseIntersections::~WarehouseIntersections(void){
+WarehouseIntersectionsTime::~WarehouseIntersectionsTime(void){
   delete whGraph ;
   whGraph = 0 ;
   for (size_t i = 0; i < whAGVs.size(); i++){
@@ -24,7 +24,7 @@ WarehouseIntersections::~WarehouseIntersections(void){
   }
 }
 
-void WarehouseIntersections::SimulateEpoch(bool train){
+void WarehouseIntersectionsTime::SimulateEpoch(bool train){
   size_t teamSize ;
   if (train)
     teamSize = 2*nPop ;
@@ -221,7 +221,7 @@ void WarehouseIntersections::SimulateEpoch(bool train){
   }
 }
 
-void WarehouseIntersections::SimulateEpoch(vector<size_t> memberIDs){
+void WarehouseIntersectionsTime::SimulateEpoch(vector<size_t> memberIDs){
   double maxEval = 0.0 ;
   vector<size_t> travelStats ;
   
@@ -389,7 +389,7 @@ void WarehouseIntersections::SimulateEpoch(vector<size_t> memberIDs){
   }
 }
 
-void WarehouseIntersections::InitialiseMATeam(){
+void WarehouseIntersectionsTime::InitialiseMATeam(){
   // Initialise NE components and domain housekeeping components of the intersection agents
   vector<int> v = whGraph->GetVertices() ;
   vector<Edge *> e = whGraph->GetEdges() ;
@@ -402,8 +402,8 @@ void WarehouseIntersections::InitialiseMATeam(){
     }
     iAgent * agent = new iAgent{i, eIDs} ;
     size_t nOut = eIDs.size() ; // NN output is additional cost applied to each edge
-    size_t nIn = nOut ; // NN input is current #AGVs on all incoming edges
-    size_t nHid = nIn*2 ; // set number of hidden nodes to twice the number of input neurons
+    size_t nIn = nOut*2 ; // NN input is current #AGVs on all incoming edges and time to arrival at intersection
+    size_t nHid = nOut*4 ; // set number of hidden nodes to twice the number of input neurons
     Agent * neAgent ;
     neAgent = new Intersection(nPop, nIn, nOut, nHid) ;
     
@@ -413,14 +413,16 @@ void WarehouseIntersections::InitialiseMATeam(){
   nAgents = whAgents.size() ;
 }
 
-void WarehouseIntersections::QueryMATeam(vector<size_t> memberIDs, vector<double> &a, vector<size_t> &s){
+void WarehouseIntersectionsTime::QueryMATeam(vector<size_t> memberIDs, vector<double> &a, vector<size_t> &s){
   vector<Edge *> e = whGraph->GetEdges() ;
-  GetJointState(e, s) ;
+  vector<double> eTime = baseCosts ;
+  GetJointState(e, s, eTime) ;
   
   for (size_t i = 0; i < nAgents; i++){
-    VectorXd input(whAgents[i]->eIDs.size()) ;
+    VectorXd input(whAgents[i]->eIDs.size()*2) ;
     for (size_t j = 0; j < whAgents[i]->eIDs.size(); j++){
-      input(j) = s[whAgents[i]->eIDs[j]] ;
+      input(2*j) = s[whAgents[i]->eIDs[j]] ;
+      input(2*j+1) = eTime[whAgents[i]->eIDs[j]] ;
     }
     VectorXd output = maTeam[i]->ExecuteNNControlPolicy(memberIDs[i], input) ;
     
@@ -437,17 +439,20 @@ void WarehouseIntersections::QueryMATeam(vector<size_t> memberIDs, vector<double
   }
 }
 
-void WarehouseIntersections::GetJointState(vector<Edge *> e, vector<size_t> &s){
+void WarehouseIntersectionsTime::GetJointState(vector<Edge *> e, vector<size_t> &s, vector<double> &eTime){
   for (size_t i = 0; i < nAGVs; i++){
     Edge * curEdge = whAGVs[i]->GetCurEdge() ;
     size_t j = whGraph->GetEdgeID(curEdge) ;
     if (j < s.size()){
       s[j]++ ;
+      if (eTime[j] > whAGVs[i]->GetT2V()){ // update next time of arrival
+        eTime[j] = whAGVs[i]->GetT2V() ;
+      }
     }
   }
 }
 
-size_t WarehouseIntersections::GetAgentID(int v){
+size_t WarehouseIntersectionsTime::GetAgentID(int v){
   size_t vID ;
   for (size_t i = 0; i < whGraph->GetNumVertices(); i++){
     if (whGraph->GetVertices()[i] == v){

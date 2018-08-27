@@ -25,8 +25,6 @@ using std::string ;
 using std::ifstream ;
 using std::stringstream ;
 
-enum AgentType {INTERSECTION, LINK, OTHERAGENT} ;
-
 class Warehouse{
   public:
     Warehouse(YAML::Node) ;
@@ -34,6 +32,9 @@ class Warehouse{
     
     virtual void SimulateEpoch(bool train = true){
       std::cout << "This function simulates a single learning epoch.\n" ;
+    }
+    virtual void SimulateEpoch(vector<size_t> team){
+      std::cout << "This function simulates a single epoch with a given multiagent team.\n" ;
     }
     virtual void InitialiseMATeam(){ // create agents for each vertex in graph
       std::cout << "This function initialises the multiagent team.\n" ;
@@ -46,7 +47,7 @@ class Warehouse{
     void OutputEpisodeReplay(string, string, string, string) ;
     void DisableEpisodeReplayOutput(){outputEpReplay = false ;}
 
-    void ExecutePolicies(YAML::Node) ;
+    void LoadPolicies(YAML::Node) ;
     
   protected:
     size_t nSteps ;
@@ -56,7 +57,6 @@ class Warehouse{
     vector<double> baseCosts ;
     vector<size_t> capacities ;
     bool neLearn ;
-    AgentType isAgent ;
     
     struct iAgent{
       size_t vID ;          // graph vertex ID associated with agent (edge ID if link agent)

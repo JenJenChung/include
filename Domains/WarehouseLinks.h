@@ -16,6 +16,7 @@ class WarehouseLinks : public Warehouse {
     ~WarehouseLinks(void) ;
     
     void SimulateEpoch(bool train = true) ;
+    void SimulateEpoch(vector<size_t> team) ;
     
     void InitialiseMATeam() ; // create agents for each vertex in graph
     
@@ -25,4 +26,4 @@ class WarehouseLinks : public Warehouse {
     
 };
 
-#endif // WAREHOUSE_LINKS_H_
+#endif // WAREHOUSE_LINKS_NO_TIME_H_

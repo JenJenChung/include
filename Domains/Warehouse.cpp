@@ -11,13 +11,6 @@ Warehouse::Warehouse(YAML::Node configs){
   neLearn = configs["neuroevo"]["learn"].as<bool>() ;
   string agentType = configs["simulation"]["agents"].as<string>() ;
   
-  if (agentType.compare("intersection") == 0)
-    isAgent = INTERSECTION ;
-  else if (agentType.compare("link") == 0)
-    isAgent = LINK ;
-  else
-    isAgent = OTHERAGENT ;
-  
   InitialiseGraph(vFile, eFile, cFile, configs) ;
   outputEvals = false ;
 }
@@ -100,20 +93,22 @@ void Warehouse::OutputEpisodeReplay(string agv_s_str, string agv_e_str, string a
   std::cout << "\t" << a_a_str << "\n" ;
 }
 
-void Warehouse::ExecutePolicies(YAML::Node configs){
+void Warehouse::LoadPolicies(YAML::Node configs){
   // Filename to read NN control policy
-  string domainDir = configs["domain"]["folder"].as<string>() ;
-  string resFolder = configs["results"]["folder"].as<string>() ;
-  string nn_str = domainDir + resFolder + configs["results"]["policies"].as<string>() ;
+  string nn_str = configs["mode"]["agent_policies"].as<string>() ;
   std::ifstream nnFile ;
   
   vector<NeuralNet *> loadedNN ;
-  std::cout << "Reading out " << nPop << " NN control policies for each agent to test...\n" ;
+  size_t fPop = 2*nPop ;
+  std::cout << "Reading out " << fPop << " NN control policies for each agent to test...\n" ;
   
   // Read in NN weight matrices for each agent
   int kStart = 0 ;
   int kEnd ;
   for (size_t n = 0; n < nAgents; n++){
+    // Double population through mutation
+    maTeam[n]->GetNEPopulation()->MutatePopulation() ;
+  
     nnFile.open(nn_str.c_str(),std::ios::in) ;
     // Get NN matrix parameters for current agent
     size_t nIn = maTeam[n]->GetNumIn() ;
@@ -125,7 +120,7 @@ void Warehouse::ExecutePolicies(YAML::Node configs){
     NNA.setZero(nIn,nHid) ;
     NNB.setZero(nHid+1,nOut) ;
     int nnK = NNA.rows() + NNB.rows() ; // number of lines corresponding to a single NN
-    int popK = nnK * nPop ; // number of lines corresponding to the entire population
+    int popK = nnK * fPop ; // number of lines corresponding to the entire population
     kEnd = kStart + popK ; // rows corresponding to agent i's NN population
     size_t m = 0 ; // track member number
     int k = 0 ; // track line number
@@ -136,14 +131,16 @@ void Warehouse::ExecutePolicies(YAML::Node configs){
         if ((k-kStart) % nnK < NNA.rows()){
           int i = (k-kStart) % nnK ;
           int j = 0 ;
-          while (std::getline(lineStream,cell,','))
+          while (std::getline(lineStream,cell,',')){
             NNA(i,j++) = atof(cell.c_str()) ;
+          }
         }
         else {
           int i = ((k-kStart) % nnK)-NNA.rows() ;
           int j = 0 ;
-          while (std::getline(lineStream,cell,','))
+          while (std::getline(lineStream,cell,',')){
             NNB(i,j++) = atof(cell.c_str()) ;
+          }
         }
         if ((k-kStart+1) % nnK == 0){
           maTeam[n]->GetNEPopulation()->GetNNIndex(m)->SetWeights(NNA,NNB) ;
@@ -152,7 +149,7 @@ void Warehouse::ExecutePolicies(YAML::Node configs){
       }
       k++ ;
       if (k >= kEnd){
-        if (m != nPop){
+        if (m != fPop){
           std::cout << "Error: insufficient NN's to fill all population members. Exiting.\n" ;
           exit(1) ;
         }

@@ -401,7 +401,7 @@ void WarehouseCentralised::QueryMATeam(vector<size_t> memberIDs, vector<double> 
   GetJointState(e, s) ;
   
   for (size_t i = 0; i < nAgents; i++){
-    VectorXd input(whAgents[i]->eIDs.size()*2) ;
+    VectorXd input(whAgents[i]->eIDs.size()) ;
     for (size_t j = 0; j < whAgents[i]->eIDs.size(); j++){
       input(j) = s[whAgents[i]->eIDs[j]] ;
     }

@@ -9,7 +9,6 @@ Warehouse::Warehouse(YAML::Node configs){
   nPop = configs["neuroevo"]["population_size"].as<size_t>() ;
   nSteps = configs["simulation"]["steps"].as<size_t>() ;
   neLearn = configs["neuroevo"]["learn"].as<bool>() ;
-  string agentType = configs["simulation"]["agents"].as<string>() ;
   
   InitialiseGraph(vFile, eFile, cFile, configs) ;
   outputEvals = false ;

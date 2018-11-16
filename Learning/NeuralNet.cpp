@@ -45,28 +45,24 @@ VectorXd NeuralNet::EvaluateNN(VectorXd inputs){
 
 // Evaluate NN output given input vector
 VectorXd NeuralNet::EvaluateNN(VectorXd inputs, VectorXd & hiddenLayer){
-  hiddenLayer = (this->*ActivationFunction)(inputs, 0) ;
-  VectorXd outputs = (this->*ActivationFunction)(hiddenLayer, 1) ;
+  hiddenLayer = (this->*ActivationFunction)(inputs, layerActivation[0]) ;
+  VectorXd outputs = (this->*ActivationFunction)(hiddenLayer, layerActivation[1]) ;
   return outputs ;
 }
 
 // Mutate the weights of the NN according to the mutation rate and mutation value std
 void NeuralNet::MutateWeights(){
-  double fan_in = weightsA.rows() ;
   for (int i = 0; i < weightsA.rows(); i++)
     for (int j = 0; j < weightsA.cols(); j++)
-      weightsA(i,j) += RandomMutation(fan_in) ;
+      weightsA(i,j) += RandomMutation() ;
   
-  fan_in = weightsB.rows() ;
   for (int i = 0; i < weightsB.rows(); i++)
     for (int j = 0; j < weightsB.cols(); j++)
-      weightsB(i,j) += RandomMutation(fan_in) ;
+      weightsB(i,j) += RandomMutation() ;
 }
 
-// Migrated from rebhuhnc/libraries/SingleAgent/NeuralNet/NeuralNet.cpp
-double NeuralNet::RandomMutation(double fan_in) {
-  // Adds random amount mutationRate% of the time,
-  // amount based on fan_in and mutstd
+// Adds random amount mutationRate% of the time
+double NeuralNet::RandomMutation() {
   if (rand_interval(0, 1) > mutationRate)
     return 0.0;
   else {

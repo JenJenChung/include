@@ -36,7 +36,7 @@ class Warehouse{
     virtual void SimulateEpoch(vector<size_t> team){
       std::cout << "This function simulates a single epoch with a given multiagent team.\n" ;
     }
-    virtual void InitialiseMATeam(){ // create agents for each vertex in graph
+    virtual void InitialiseMATeam(){ // create agents for the graph
       std::cout << "This function initialises the multiagent team.\n" ;
     }
     void EvolvePolicies(bool init = false) ;

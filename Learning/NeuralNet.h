@@ -50,7 +50,7 @@ class NeuralNet{
     VectorXd (NeuralNet::*ActivationFunction)(VectorXd, size_t) ;
     VectorXd HyperbolicTangent(VectorXd, size_t) ; // outputs between [-1,1]
     VectorXd LogisticFunction(VectorXd, size_t) ; // outputs between [0,1]
-    double RandomMutation(double) ;
+    double RandomMutation() ;
     void WriteNN(MatrixXd, std::stringstream &) ;
 } ;
 #endif // NEURAL_NET_H_

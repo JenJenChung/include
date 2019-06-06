@@ -30,7 +30,7 @@ class Warehouse{
     Warehouse(YAML::Node) ;
     virtual ~Warehouse(void) ;
     
-    virtual void SimulateEpoch(bool train = true){
+    virtual void SimulateEpoch(bool fail = false){
       std::cout << "This function simulates a single learning epoch.\n" ;
     }
     virtual void SimulateEpoch(vector<size_t> team){
@@ -93,6 +93,8 @@ class Warehouse{
     std::ofstream agvEdgeFile ;
     std::ofstream agentStateFile ;
     std::ofstream agentActionFile ;
+    
+    vector<size_t> failedAgentIDs ; // index of agents to disable during training
     
 };
 

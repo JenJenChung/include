@@ -24,12 +24,8 @@ WarehouseLinks::~WarehouseLinks(){
   }
 }
 
-void WarehouseLinks::SimulateEpoch(bool train){
-  size_t teamSize ;
-  if (train)
-    teamSize = 2*nPop ;
-  else
-    teamSize = nPop ;
+void WarehouseLinks::SimulateEpoch(bool fail){
+  size_t teamSize =2*nPop ;
   
   vector< vector<size_t> > teams = RandomiseTeams(teamSize) ; // each row is the population for a single agent
   
@@ -72,7 +68,14 @@ void WarehouseLinks::SimulateEpoch(bool train){
       // Get agent actions and update graph costs
       vector<double> a = baseCosts ;
       vector<size_t> s(whGraph->GetNumEdges(),0) ;
-      QueryMATeam(memberIDs, a, s) ;
+      
+      if (fail){
+        QueryMATeam(memberIDs, a, s, failedAgentIDs) ;
+      }
+      else{
+        QueryMATeam(memberIDs, a, s, vector<size_t>()) ;
+      }
+      
       UpdateGraphCosts(a) ;
       
       // Replan AGVs as necessary
@@ -257,7 +260,7 @@ void WarehouseLinks::SimulateEpoch(vector<size_t> memberIDs){
     // Get agent actions and update graph costs
     vector<double> a = baseCosts ;
     vector<size_t> s(whGraph->GetNumEdges(),0) ;
-    QueryMATeam(memberIDs, a, s) ;
+    QueryMATeam(memberIDs, a, s, vector<size_t>()) ;
     UpdateGraphCosts(a) ;
     
     // Replan AGVs as necessary
@@ -417,7 +420,7 @@ void WarehouseLinks::InitialiseMATeam(){
   nAgents = whAgents.size() ;
 }
 
-void WarehouseLinks::QueryMATeam(vector<size_t> memberIDs, vector<double> &a, vector<size_t> &s){
+void WarehouseLinks::QueryMATeam(vector<size_t> memberIDs, vector<double> &a, vector<size_t> &s, vector<size_t> fAgents){
   vector<Edge *> e = whGraph->GetEdges() ;
   GetJointState(e, s) ;
   
@@ -425,6 +428,13 @@ void WarehouseLinks::QueryMATeam(vector<size_t> memberIDs, vector<double> &a, ve
     VectorXd input(1) ;
     input(0) = s[whAgents[i]->vID] ;
     VectorXd output = maTeam[i]->ExecuteNNControlPolicy(memberIDs[i], input) ;
+    
+    for (size_t ii = 0; ii < fAgents.size(); ii++){
+      if (whAgents[i]->vID == fAgents[ii]){
+        output = VectorXd::Ones(output.size()) ;
+        break ;
+      }
+    }
     
     double maxBaseCost ;
     if (neLearn){

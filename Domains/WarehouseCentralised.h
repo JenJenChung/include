@@ -15,7 +15,7 @@ class WarehouseCentralised : public Warehouse {
     WarehouseCentralised(YAML::Node configs) : Warehouse(configs){}
     ~WarehouseCentralised(void) ;
     
-    void SimulateEpoch(bool train = true) ;
+    void SimulateEpoch() ;
     void SimulateEpoch(vector<size_t> team) ;
     
     void InitialiseMATeam() ; // create agents for each vertex in graph

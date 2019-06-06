@@ -24,12 +24,8 @@ WarehouseCentralisedTime::~WarehouseCentralisedTime(void){
   }
 }
 
-void WarehouseCentralisedTime::SimulateEpoch(bool train){
-  size_t teamSize ;
-  if (train)
-    teamSize = 2*nPop ;
-  else
-    teamSize = nPop ;
+void WarehouseCentralisedTime::SimulateEpoch(){
+  size_t teamSize =2*nPop ;
   
   vector< vector<size_t> > teams = RandomiseTeams(teamSize) ; // each row is the population for a single agent
   

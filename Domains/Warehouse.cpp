@@ -9,6 +9,17 @@ Warehouse::Warehouse(YAML::Node configs){
   nPop = configs["neuroevo"]["population_size"].as<size_t>() ;
   nSteps = configs["simulation"]["steps"].as<size_t>() ;
   neLearn = configs["neuroevo"]["learn"].as<bool>() ;
+  size_t failureEpoch = configs["simulation"]["failure_epoch"].as<size_t>() ;
+  size_t nEps = configs["neuroevo"]["epochs"].as<size_t>() ;
+  failedAgentIDs = configs["simulation"]["failed"].as<std::vector<size_t>>();
+  if (failureEpoch < nEps){
+    std::cout << "Simulating agent failure at epoch: " << failureEpoch << "\n" ;
+    std::cout << "  ID of agent/s that will fail: [" ;
+    for (size_t i = 0; i < failedAgentIDs.size(); i++){
+      std::cout << failedAgentIDs[i] << " " ;
+    }
+    std::cout << "]\n" ;
+  }
   
   InitialiseGraph(vFile, eFile, cFile, configs) ;
   outputEvals = false ;

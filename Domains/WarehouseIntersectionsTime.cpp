@@ -403,7 +403,7 @@ void WarehouseIntersectionsTime::InitialiseMATeam(){
     iAgent * agent = new iAgent{i, eIDs} ;
     size_t nOut = eIDs.size() ; // NN output is additional cost applied to each edge
     size_t nIn = nOut*2 ; // NN input is current #AGVs on all incoming edges and time to arrival at intersection
-    size_t nHid = nOut*4 ; // set number of hidden nodes to twice the number of input neurons
+    size_t nHid = nIn*4 ; // set number of hidden nodes to four times the number of input neurons
     Agent * neAgent ;
     neAgent = new Intersection(nPop, nIn, nOut, nHid) ;
     
